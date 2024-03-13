@@ -5,9 +5,7 @@ from clearml import Task
 
 from torch import set_float32_matmul_precision
 
-from scripts.model import LSTMSimple
 from scripts.model import LSTMAttention
-from scripts.model import LSTMAttentionWithTimeDecay
 from scripts.datamodule import AdBannerDataModule
 from scripts.lightningmodule import AdBannerLightningModule
 from scripts.config import Config
@@ -19,13 +17,6 @@ from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.callbacks import LearningRateMonitor
 
 from lightning.pytorch.loggers import TensorBoardLogger
-
-
-MODELS = {
-    'LSTMSimple': LSTMSimple,
-    'LSTMAttention': LSTMAttention,
-    'LSTMAttentionWithTimeDecay': LSTMAttentionWithTimeDecay,
-}
 
 
 def arg_parse():
@@ -64,7 +55,7 @@ def main():
         num_workers=config.data.num_workers,
     )
 
-    model = MODELS[config.model.backbone](
+    model = LSTMAttention(
         num_embeddings=config.model.num_embeddings,
         embedding_dim=config.model.embedding_dim,
         hidden_size=config.model.hidden_size,
@@ -89,7 +80,7 @@ def main():
         logger=TensorBoardLogger(save_dir='.', name='logs'),
         callbacks=[
             checkpoint_callback,
-            EarlyStopping(monitor=config.train.monitor_metric, patience=10, mode='max'),
+            EarlyStopping(monitor=config.train.monitor_metric, patience=3, mode='max'),
             LearningRateMonitor(logging_interval='epoch'),
         ],
         deterministic=True,
