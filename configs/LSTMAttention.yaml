@@ -1,0 +1,27 @@
+experiment_name: 'LSTMAttention'
+
+train:
+  monitor_metric: 'valid.AUC'
+  monitor_mode: 'max'
+  accelerator: 'gpu'
+  device: 0
+  n_epochs: 30
+  seed: 42
+  lr: 0.05
+
+model:
+  backbone: 'LSTMAttention'
+  num_embeddings: 6
+  embedding_dim: 32
+  hidden_size: 64
+  num_layers: 3
+  dropout: 0.0
+  non_linearity: 'identity'
+  time_decay: 0.
+
+data:
+  path: '/content/multi-touch-attribution/data/rk_events_channels_20_000.csv'
+  num_workers: 2
+  train_fraction: 0.8
+  train_batch_size: 8
+  valid_batch_size: 16

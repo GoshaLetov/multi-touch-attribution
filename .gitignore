@@ -1,0 +1,7 @@
+notebooks
+lightning_logs
+experiments
+__pycache__
+.idea
+data
+.DS_Store
