@@ -104,6 +104,7 @@ class ControlsFCN(nn.Module):
         for key, value in mapping.items():
             self.embeddings[key] = nn.Embedding(num_embeddings=len(value), embedding_dim=len(value))
             self.output_len += len(value)
+        # self.embeddings = nn.ModuleDict(self.embeddings)
 
     def forward(self, controls: dict[str, torch.Tensor]) -> torch.Tensor:
         embeddings = []

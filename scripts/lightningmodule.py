@@ -35,8 +35,8 @@ class AdBannerLightningModule(pl.LightningModule):
         return self._model(sequence, controls)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self._model.parameters(), lr=self._lr, weight_decay=0.001)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=1e-5)
+        optimizer = torch.optim.AdamW(self._model.parameters(), lr=self._lr, weight_decay=0.005)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=15, eta_min=1e-5)
         return {
             'optimizer': optimizer,
             'lr_scheduler': {

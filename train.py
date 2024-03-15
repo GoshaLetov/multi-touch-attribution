@@ -84,7 +84,7 @@ def main():
         logger=TensorBoardLogger(save_dir='.', name='logs'),
         callbacks=[
             checkpoint_callback,
-            EarlyStopping(monitor=config.train.monitor_metric, patience=3, mode='max'),
+            EarlyStopping(monitor=config.train.monitor_metric, patience=5, mode='max'),
             LearningRateMonitor(logging_interval='epoch'),
         ],
         deterministic=True,

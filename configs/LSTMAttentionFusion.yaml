@@ -7,7 +7,7 @@ train:
   device: 0
   n_epochs: 30
   seed: 42
-  lr: 0.05
+  lr: 0.01
 
 model:
   backbone: 'LSTMAttentionFusion'
@@ -15,9 +15,9 @@ model:
   embedding_dim: 32
   hidden_size: 64
   num_layers: 3
-  dropout: 0.05
+  dropout: 1e-3
   non_linearity: 'identity'
-  time_decay: 0.05
+  time_decay: 0.25
   controls: true
 
 data:
