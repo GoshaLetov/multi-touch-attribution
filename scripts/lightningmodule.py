@@ -22,11 +22,17 @@ class AdBannerLightningModule(pl.LightningModule):
         self._lr = lr
 
     def forward(self,
-                batch: torch.Tensor,
-                lengths: torch.Tensor,
-                time_delta: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        batch, lengths, time_delta = batch.to(self.device), lengths.to(self.device), time_delta.to(self.device)
-        return self._model(batch, lengths, time_delta)
+                sequence: dict[str, torch.Tensor],
+                controls: dict[str, torch.Tensor] = None) -> tuple[torch.Tensor, torch.Tensor]:
+
+        for key, value in sequence.items():
+            sequence[key] = value.to(self.device)
+
+        if controls:
+            for key, value in controls.items():
+                controls[key] = value.to(self.device)
+
+        return self._model(sequence, controls)
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self._model.parameters(), lr=self._lr, weight_decay=0.001)
@@ -42,28 +48,28 @@ class AdBannerLightningModule(pl.LightningModule):
         }
 
     def training_step(self, batch, batch_idx):
-        sequence, labels, lengths, time_delta = batch
-        probas, _ = self.forward(sequence, lengths, time_delta)
+        sequence, controls, labels = batch
+        probas, _ = self.forward(sequence, controls)
 
         loss = self._loss(probas, labels.to(dtype=torch.float, device=self.device))
         self.log(name=f'train.BCELoss', value=loss.item())
         return loss
 
     def validation_step(self, batch, batch_idx):
-        sequence, labels, lengths, time_delta = batch
-        probas, _ = self.forward(sequence, lengths, time_delta)
+        sequence, controls, labels = batch
+        probas, _ = self.forward(sequence, controls)
         loss = self._loss(probas, labels.to(dtype=torch.float, device=self.device))
         self.log(name=f'valid.BCELoss', value=loss.item())
         self._metrics_valid(probas, labels)
 
     def test_step(self, batch, batch_idx):
-        sequence, labels, lengths, time_delta = batch
-        probas, _ = self.forward(sequence, lengths, time_delta)
+        sequence, controls, labels = batch
+        probas, _ = self.forward(sequence, controls)
         self._metrics_test(probas, labels)
 
     def predict_step(self, batch, batch_idx):
-        sequence, labels, lengths, time_delta = batch
-        probas, scores = self.forward(sequence, lengths, time_delta)
+        sequence, controls, labels = batch
+        probas, scores = self.forward(sequence, controls)
         return probas, scores
 
     def on_validation_epoch_start(self) -> None:

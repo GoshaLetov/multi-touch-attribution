@@ -93,10 +93,33 @@ class MultiTouchAttention(nn.Module):
         return self.attention(self.mlp(x), length, time_delta)
 
 
+class ControlsFCN(nn.Module):
+    def __init__(self, mapping: dict[str, dict[int, int]]):
+        super(ControlsFCN, self).__init__()
+        self.mapping = mapping
+        self.columns = sorted(mapping.keys())
+        self.output_len = 0
+
+        self.embeddings = {}
+        for key, value in mapping.items():
+            self.embeddings[key] = nn.Embedding(num_embeddings=len(value), embedding_dim=len(value))
+            self.output_len += len(value)
+
+    def forward(self, controls: dict[str, torch.Tensor]) -> torch.Tensor:
+        embeddings = []
+
+        for column in self.columns:
+            if column in controls:
+                embeddings.append(self.embeddings[column](controls[column]))
+        embeddings = torch.cat(embeddings, dim=-1)
+        return embeddings
+
+
 class LSTMAttention(nn.Module):
     def __init__(
         self,
         num_embeddings: int,
+        mapping: dict[str, dict[int, int]] = None,
         embedding_dim: int = 32,
         hidden_size: int = 64,
         num_layers: int = 3,
@@ -106,9 +129,12 @@ class LSTMAttention(nn.Module):
     ) -> None:
         super(LSTMAttention, self).__init__()
 
+        self.controls = mapping is not None
+
         self.embeddings = nn.Embedding(
             num_embeddings=num_embeddings,
             embedding_dim=embedding_dim,
+            padding_idx=0,
         )
 
         self.lstm = nn.LSTM(
@@ -127,9 +153,17 @@ class LSTMAttention(nn.Module):
             time_decay=time_decay,
         )
 
+        in_features = hidden_size
+
+        if mapping:
+            self.controls = ControlsFCN(
+                mapping=mapping,
+            )
+            in_features += self.controls.output_len
+
         self.classifier = nn.Sequential(
             nn.Linear(
-                in_features=hidden_size,
+                in_features=in_features,
                 out_features=1,
             ),
             nn.Sigmoid(),
@@ -137,10 +171,12 @@ class LSTMAttention(nn.Module):
         )
 
     def forward(self,
-                batch: torch.Tensor,
-                lengths: torch.Tensor,
-                time_delta: torch.Tensor
-                ) -> tuple[torch.Tensor, torch.Tensor]:
-        outputs, _ = self.lstm(self.embeddings(batch))
-        representations, scores = self.attention(outputs, lengths, time_delta)
-        return self.classifier(representations), scores
+                sequence: dict[str, torch.Tensor],
+                controls: dict[str, torch.Tensor] = None) -> tuple[torch.Tensor, torch.Tensor]:
+        outputs, _ = self.lstm(self.embeddings(sequence['sequence']))
+        representations, scores = self.attention(outputs, sequence['lengths'], sequence['time'])
+
+        if self.controls:
+            representations = torch.cat([representations, self.controls(controls)], dim=-1)
+
+        return self.classifier(representations.to(torch.float32)), scores

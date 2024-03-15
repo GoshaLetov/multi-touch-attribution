@@ -2,21 +2,12 @@ import pandas as pd
 
 from typing import Optional
 from lightning.pytorch import LightningDataModule
-from lightning.pytorch.utilities.types import EVAL_DATALOADERS
 from torch.utils.data import DataLoader
 
 from scripts.dataset import AdBannerDataset
 from scripts.dataset import collate_fn
-
-
-MEDIA = {
-    'video_mobile_app': 1,
-    'banner_mobile_app': 2,
-    'video_site': 3,
-    'banner_site': 4,
-    'banner_marketplace': 5,
-    'video_marketplace': 0,
-}
+from scripts.constants import MEDIA
+from scripts.constants import CONTROL
 
 
 def read_events(path: str) -> pd.DataFrame:
@@ -41,6 +32,25 @@ def read_events(path: str) -> pd.DataFrame:
     return events
 
 
+def read_controls(path: str) -> pd.DataFrame:
+    controls = pd.read_csv(filepath_or_buffer=path).drop(columns=['input_id'])
+    controls = controls.set_index('hid').sort_index().reset_index().drop_duplicates(subset=['hid'])
+
+    controls = controls.fillna(9999999).set_index(['hid', 'long_interests']).astype(int).reset_index().set_index('hid')
+    controls.long_interests = controls.long_interests.apply(eval).apply(lambda x: [9999999] if x == [] else x)
+
+    for column in CONTROL.keys():
+        if column in ['long_interests']:
+            controls[column] = controls[column].apply(lambda x: [CONTROL[column][i] for i in x])
+        else:
+            controls[column] = controls[column].map(CONTROL[column])
+
+    controls = controls.reset_index()
+    controls = controls.drop(columns=['long_interests', 'city'])
+
+    return controls
+
+
 def train_valid_test_split(events: pd.DataFrame, train_fraction: float) -> pd.DataFrame:
     hid = events.hid.drop_duplicates().reset_index().set_index('hid').drop(columns='index')
 
@@ -61,6 +71,7 @@ class AdBannerDataModule(LightningDataModule):
     def __init__(
         self,
         path: str,
+        path_controls: str,
         train_fraction: float = 0.8,
         train_batch_size: int = 32,
         valid_batch_size: int = 64,
@@ -68,6 +79,7 @@ class AdBannerDataModule(LightningDataModule):
     ):
         super().__init__()
         self._path = path
+        self._path_controls = path_controls
         self._train_fraction = train_fraction
         self._train_batch_size = train_batch_size
         self._valid_batch_size = valid_batch_size
@@ -83,20 +95,25 @@ class AdBannerDataModule(LightningDataModule):
             train_fraction=self._train_fraction,
         )
 
+        controls = read_controls(self._path_controls)
+
         self.train_dataset = AdBannerDataset(
-            data=events[events.part == 'train'],
+            events=events[events.part == 'train'],
+            controls=controls,
             max_seq_length=35,
             min_seq_length=2,
             augmented=False,
         )
         self.valid_dataset = AdBannerDataset(
-            data=events[events.part == 'valid'],
+            events=events[events.part == 'valid'],
+            controls=controls,
             max_seq_length=35,
             min_seq_length=2,
             augmented=False,
         )
         self.test_dataset = AdBannerDataset(
-            data=events[events.part == 'test'],
+            events=events[events.part == 'test'],
+            controls=controls,
             max_seq_length=35,
             min_seq_length=2,
             augmented=False,
