@@ -1,4 +1,4 @@
-experiment_name: 'LSTMAttentionWithTimeDecay'
+experiment_name: 'LSTMAttentionFusion'
 
 train:
   monitor_metric: 'valid.AUC'
@@ -10,15 +10,15 @@ train:
   lr: 0.05
 
 model:
-  backbone: 'LSTMAttentionWithTimeDecay'
+  backbone: 'LSTMAttentionFusion'
   num_embeddings: 7
-  embedding_dim: 64
+  embedding_dim: 32
   hidden_size: 64
   num_layers: 3
   dropout: 0.05
   non_linearity: 'identity'
   time_decay: 0.05
-  controls: false
+  controls: true
 
 data:
   path: '/content/drive/MyDrive/rk_events_channels_20_000.csv'

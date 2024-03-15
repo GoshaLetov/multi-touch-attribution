@@ -11,17 +11,19 @@ train:
 
 model:
   backbone: 'LSTMAttention'
-  num_embeddings: 6
-  embedding_dim: 32
+  num_embeddings: 7
+  embedding_dim: 64
   hidden_size: 64
   num_layers: 3
-  dropout: 0.0
+  dropout: 0.05
   non_linearity: 'identity'
   time_decay: 0.
+  controls: false
 
 data:
-  path: '/content/multi-touch-attribution/data/rk_events_channels_20_000.csv'
+  path: '/content/drive/MyDrive/rk_events_channels_20_000.csv'
+  path_controls: '/content/drive/MyDrive/rk_features_channels_20_000.csv'
   num_workers: 2
   train_fraction: 0.8
-  train_batch_size: 8
-  valid_batch_size: 16
+  train_batch_size: 64
+  valid_batch_size: 64

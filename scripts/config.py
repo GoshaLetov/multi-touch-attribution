@@ -19,12 +19,14 @@ class ModelConfig(BaseModel):
     hidden_size: int
     num_layers: int
     dropout: float
-    non_linearity: str = None
-    time_decay: float = None
+    non_linearity: str
+    time_decay: float
+    controls: bool
 
 
 class DataConfig(BaseModel):
     path: str
+    path_controls: str
     num_workers: int
     train_fraction: float
     train_batch_size: int

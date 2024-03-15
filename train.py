@@ -5,6 +5,7 @@ from clearml import Task
 
 from torch import set_float32_matmul_precision
 
+from scripts.constants import CONTROL
 from scripts.model import LSTMAttention
 from scripts.datamodule import AdBannerDataModule
 from scripts.lightningmodule import AdBannerLightningModule
@@ -49,13 +50,16 @@ def main():
 
     datamodule = AdBannerDataModule(
         path=config.data.path,
+        path_controls=config.data.path_controls,
         train_fraction=config.data.train_fraction,
         train_batch_size=config.data.train_batch_size,
         valid_batch_size=config.data.valid_batch_size,
         num_workers=config.data.num_workers,
     )
-
     model = LSTMAttention(
+        mapping=CONTROL if config.model.controls else None,
+        attention_non_linearity=config.model.non_linearity,
+        time_decay=config.model.time_decay,
         num_embeddings=config.model.num_embeddings,
         embedding_dim=config.model.embedding_dim,
         hidden_size=config.model.hidden_size,
